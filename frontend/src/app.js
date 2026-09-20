@@ -3,6 +3,31 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   // =========================================================
+  // 0. SYSTEM VOICE PRELOADER & AUDIO UNLOCK
+  // =========================================================
+  let systemVoices = [];
+
+  function loadSystemVoices() {
+    if ('speechSynthesis' in window) {
+      systemVoices = window.speechSynthesis.getVoices();
+    }
+  }
+
+  loadSystemVoices();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      loadSystemVoices();
+    };
+  }
+
+  // Unlock AudioContext on first user touch/click to prevent autoplay blocks
+  document.body.addEventListener("click", () => {
+    if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  }, { once: true });
+
+  // =========================================================
   // 1. NAVIGATION & SUB-TABS
   // =========================================================
   const navTabs = document.querySelectorAll(".nav-tab");
@@ -51,7 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/health");
       const data = await res.json();
       if (data.status === "healthy") {
-        statusBadge.innerHTML = `<span class="pulse-dot"></span> API Online (v${data.library_version || data.version})`;
+        if (statusBadge) {
+          statusBadge.innerHTML = `<span class="pulse-dot"></span> API Online (v${data.library_version || data.version})`;
+        }
         if (badgeCorpusWords && data.total_morph_words) {
           badgeCorpusWords.textContent = `📚 ${data.total_morph_words.toLocaleString()} Forms`;
         }
@@ -245,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Play Kumaoni Speech synthesis
   if (btnPlayKumaoniSpeech) {
     btnPlayKumaoniSpeech.addEventListener("click", () => {
-      speakKumaoniVoice(lastKumaoniText, currentSpeed);
+      speakKumaoniVoice(lastKumaoniText, lastRomanText, currentSpeed);
     });
   }
 
@@ -255,7 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (lastAudioWavB64) {
         playBase64Wav(lastAudioWavB64);
       } else {
-        // Fallback tone audio
         const audio = new Audio(`/api/voice/wav?duration=0.5&freq=440`);
         audio.play().catch(e => console.warn(e));
       }
@@ -324,7 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Auto-speak if enabled
       if (toggleAutoSpeak && toggleAutoSpeak.checked) {
-        speakKumaoniVoice(data.translated_text, currentSpeed);
+        speakKumaoniVoice(data.translated_text, data.romanized, currentSpeed);
       }
 
       // Add to Session History
@@ -386,42 +412,104 @@ document.addEventListener("DOMContentLoaded", () => {
   startVisualizerAnimation(false);
 
   // =========================================================
-  // 4. SPEECH SYNTHESIS ENGINE
+  // 4. ROCK-SOLID SPEECH SYNTHESIS ENGINE
   // =========================================================
-  function speakKumaoniVoice(text, rate = 1.0) {
+  function speakKumaoniVoice(kumaoniText, romanText = "", rate = 1.0) {
     if (!('speechSynthesis' in window)) {
-      alert("Speech synthesis is not supported in this browser.");
+      console.warn("Speech synthesis is not supported in this browser.");
+      if (lastAudioWavB64) playBase64Wav(lastAudioWavB64);
       return;
     }
-    window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Select best Devanagari/Hindi/Indian voice
-    const devanagariVoice = voices.find(v => v.lang.startsWith("hi") || v.lang.startsWith("ne") || v.lang.includes("IN"));
-    if (devanagariVoice) {
-      utterance.voice = devanagariVoice;
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+    } catch (e) {
+      console.warn("SpeechSynthesis resume error:", e);
     }
 
-    utterance.rate = rate * 0.92; // Slightly slowed cadence for authentic Himalayan inflection
+    loadSystemVoices();
+
+    // Look for Indic (Hindi, Nepali, Marathi, Sanskrit, India) voice
+    const indicVoice = systemVoices.find(v => {
+      const l = (v.lang || "").toLowerCase();
+      const n = (v.name || "").toLowerCase();
+      return l.startsWith("hi") ||
+             l.startsWith("ne") ||
+             l.startsWith("mr") ||
+             l.startsWith("sa") ||
+             l.includes("in") ||
+             n.includes("hindi") ||
+             n.includes("india") ||
+             n.includes("swara") ||
+             n.includes("kalpana") ||
+             n.includes("hemant") ||
+             n.includes("neerja") ||
+             n.includes("madhav");
+    });
+
+    let textToSpeak = kumaoniText;
+    let targetLang = "hi-IN";
+
+    // If no Indic voice installed on user's OS, speak Romanized phonetics using English voice
+    if (!indicVoice) {
+      textToSpeak = romanText || kumaoniText;
+      targetLang = "en-IN";
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = targetLang;
+
+    if (indicVoice) {
+      utterance.voice = indicVoice;
+    } else if (systemVoices.length > 0) {
+      const engVoice = systemVoices.find(v => (v.lang || "").toLowerCase().startsWith("en")) || systemVoices[0];
+      if (engVoice) utterance.voice = engVoice;
+    }
+
+    utterance.rate = Math.max(0.6, Math.min(1.5, rate * 0.94));
     utterance.pitch = 1.05;
 
-    if (playBtnText) playBtnText.textContent = "Playing...";
+    if (playBtnText) playBtnText.textContent = "🔊 Speaking...";
+    startVisualizerAnimation(true);
+
     utterance.onend = () => {
       if (playBtnText) playBtnText.textContent = "Speak Kumaoni";
-    };
-    utterance.onerror = () => {
-      if (playBtnText) playBtnText.textContent = "Speak Kumaoni";
+      stopVisualizerAnimation();
     };
 
-    window.speechSynthesis.speak(utterance);
+    utterance.onerror = (err) => {
+      console.warn("SpeechSynthesis utterance error:", err);
+      if (playBtnText) playBtnText.textContent = "Speak Kumaoni";
+      stopVisualizerAnimation();
+      // Fallback to Tone WAV if speech engine errors
+      if (lastAudioWavB64) {
+        playBase64Wav(lastAudioWavB64);
+      }
+    };
+
+    // Small delay to prevent Chromium cancellation race condition
+    setTimeout(() => {
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn("speechSynthesis.speak failed:", e);
+        if (lastAudioWavB64) playBase64Wav(lastAudioWavB64);
+      }
+    }, 60);
   }
 
   function playBase64Wav(b64Data) {
+    if (!b64Data) return;
     try {
       const snd = new Audio("data:audio/wav;base64," + b64Data);
-      snd.play().catch(e => console.warn(e));
+      startVisualizerAnimation(true);
+      snd.onended = () => stopVisualizerAnimation();
+      snd.onerror = () => stopVisualizerAnimation();
+      snd.play().catch(e => {
+        console.warn("Audio wav playback catch:", e);
+        stopVisualizerAnimation();
+      });
     } catch (e) {
       console.warn("Audio wav playback error:", e);
     }
@@ -464,16 +552,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/voice/dialogue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ speaker, message, source_lang: lang, target_dialect: "central" })
+        body: JSON.stringify({ 
+          speaker, 
+          message, 
+          source_lang: lang, 
+          target_dialect: voiceTargetDialect ? voiceTargetDialect.value : "central" 
+        })
       });
       const data = await res.json();
       renderDialogueBubble(data);
 
-      if (speaker === "person_a") {
-        speakKumaoniVoice(data.translated_kumaoni, 1.0);
-      } else {
-        speakKumaoniVoice(data.translated_kumaoni, 1.0);
-      }
+      speakKumaoniVoice(data.translated_kumaoni, data.romanized, 1.0);
     } catch (e) {
       console.error("Dialogue error:", e);
     }
@@ -487,7 +576,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const title = isVisitor ? "🎒 Visitor (Tourist)" : "🏔️ Local Resident (पहाड़ी)";
     const mainText = isVisitor ? data.translated_kumaoni : data.original;
-    const subText = isVisitor ? `Original: "${data.original}" • ${data.romanized}` : `English: "${data.translated_english}" • ${data.romanized}`;
+    const subText = isVisitor 
+      ? `Original: "${data.original}" • ${data.romanized}` 
+      : `English: "${data.translated_english}" • ${data.romanized}`;
 
     bubble.innerHTML = `
       <div class="bubble-header">
@@ -501,7 +592,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const playBtn = bubble.querySelector(".bubble-play-btn");
     if (playBtn) {
       playBtn.addEventListener("click", () => {
-        speakKumaoniVoice(mainText, 1.0);
+        speakKumaoniVoice(mainText, data.romanized, 1.0);
       });
     }
 
@@ -568,11 +659,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const playBtn = card.querySelector(".btn-play-phrase");
         playBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          speakKumaoniVoice(p.kumaoni, 1.0);
+          speakKumaoniVoice(p.kumaoni, p.roman, 1.0);
         });
 
         card.addEventListener("click", () => {
-          speakKumaoniVoice(p.kumaoni, 1.0);
+          speakKumaoniVoice(p.kumaoni, p.roman, 1.0);
           if (voiceInputText) {
             voiceInputText.value = p.english;
           }
@@ -646,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         card.querySelector(".btn-play-wisdom").addEventListener("click", () => {
-          speakKumaoniVoice(prov.kumaoni, 0.95);
+          speakKumaoniVoice(prov.kumaoni, prov.roman, 0.95);
         });
 
         proverbsGrid.appendChild(card);
@@ -701,7 +792,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         card.querySelector(".btn-play-riddle").addEventListener("click", () => {
-          speakKumaoniVoice(rid.kumaoni || rid.riddle, 0.95);
+          speakKumaoniVoice(rid.kumaoni || rid.riddle, rid.roman, 0.95);
         });
 
         riddlesGrid.appendChild(card);
@@ -849,7 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (numResDevDigits) numResDevDigits.textContent = data.devanagari_num;
 
       if (btnPlayNumSpeech) {
-        btnPlayNumSpeech.onclick = () => speakKumaoniVoice(data.words, 0.95);
+        btnPlayNumSpeech.onclick = () => speakKumaoniVoice(data.words, data.roman, 0.95);
       }
     } catch (e) {
       console.error(e);
@@ -858,7 +949,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnPlayNumSpeech) {
     btnPlayNumSpeech.addEventListener("click", () => {
-      if (numResWords) speakKumaoniVoice(numResWords.textContent, 0.95);
+      if (numResWords) speakKumaoniVoice(numResWords.textContent, numResRoman ? numResRoman.textContent : "", 0.95);
     });
   }
 
@@ -896,7 +987,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
 
       el.querySelector(".btn-play-history").addEventListener("click", () => {
-        speakKumaoniVoice(h.translated_text, 1.0);
+        speakKumaoniVoice(h.translated_text, h.romanized, 1.0);
       });
 
       historyList.appendChild(el);
