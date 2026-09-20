@@ -10,13 +10,29 @@ import subprocess
 import webbrowser
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows consoles
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # Add project roots to path
 CURRENT_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = CURRENT_DIR / "backend"
 FRONTEND_DIR = CURRENT_DIR / "frontend"
-LIB_DIR = CURRENT_DIR.parent
 
-sys.path.insert(0, str(LIB_DIR))
+POSSIBLE_LIB_PATHS = [
+    CURRENT_DIR.parent,
+    CURRENT_DIR.parent / "kumaoni language library",
+    CURRENT_DIR.parent.parent / "kumaoni language library",
+    CURRENT_DIR / "kumaoni",
+]
+for p in POSSIBLE_LIB_PATHS:
+    if p.exists() and str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
 sys.path.insert(0, str(BACKEND_DIR))
 
 try:
@@ -25,7 +41,7 @@ try:
     from backend.server import app
 except ImportError:
     print("Installing backend dependencies (fastapi, uvicorn)...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "fastapi", "uvicorn"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "fastapi", "uvicorn", "pydantic"])
     import uvicorn
     from fastapi.staticfiles import StaticFiles
     from backend.server import app
@@ -44,7 +60,7 @@ def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     url = f"http://localhost:{port}"
     print(f"\n=======================================================")
-    print(f"🎙️  Kumaoni Voice Translator Web Application")
+    print(f"🎙️  Kumaoni Voice Translator & Cultural Heritage App")
     print(f"=======================================================")
     print(f"🚀 Running at: {url}")
     print(f"📖 Swagger Docs: {url}/docs")

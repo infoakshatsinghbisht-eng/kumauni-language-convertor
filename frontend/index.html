@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kumaoni Voice AI (कुमाऊँनी आवाज अनुवादक) | Universal Speech-to-Speech Engine</title>
-  <meta name="description" content="Next-generation Kumaoni Voice Translator. Real-time speech recognition, authentic Central Pahari pronunciation synthesis, live waveform visualizer, and two-way dialogue mode.">
+  <title>Kumaoni Voice AI (कुमाऊँनी आवाज अनुवादक) | Himalayan Speech & Culture Studio</title>
+  <meta name="description" content="Next-generation Kumaoni Voice Translator & Cultural Intelligence Studio. Real-time speech recognition, authentic Pahari pronunciation synthesis, 300k+ word lexicon, proverbs, riddles, literature, and calendar.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -25,12 +25,13 @@
         </div>
         <div class="brand-text">
           <h1>Kumaoni Voice AI</h1>
-          <p class="brand-tagline">कुमाऊँनी आवाज अनुवादक &bull; Authentic Central Pahari Speech-to-Speech Engine</p>
+          <p class="brand-tagline">कुमाऊँनी आवाज अनुवादक &bull; Authentic Central Pahari Speech &amp; Cultural Intelligence</p>
         </div>
       </div>
       <div class="header-badges">
         <span id="backend-status-badge" class="badge badge-pulse"><span class="pulse-dot"></span> API Online</span>
-        <span class="badge badge-version">v1.0.0 Full-Stack</span>
+        <span id="badge-corpus-words" class="badge badge-accent">📚 300,516+ Forms</span>
+        <span id="badge-season" class="badge badge-season">🍂 Season</span>
       </div>
     </div>
   </header>
@@ -41,13 +42,19 @@
         <span class="tab-icon">🎙️</span> Speech-to-Speech
       </button>
       <button class="nav-tab" id="tab-btn-dialogue" data-tab="dialogue">
-        <span class="tab-icon">💬</span> Two-Way Dialogue Mode
+        <span class="tab-icon">💬</span> Two-Way Dialogue
       </button>
       <button class="nav-tab" id="tab-btn-phraseboard" data-tab="phraseboard">
         <span class="tab-icon">🏔️</span> Mountain Phraseboard
       </button>
+      <button class="nav-tab" id="tab-btn-wisdom" data-tab="wisdom">
+        <span class="tab-icon">📜</span> Himalayan Wisdom &amp; Lore
+      </button>
+      <button class="nav-tab" id="tab-btn-calendar" data-tab="calendar">
+        <span class="tab-icon">📅</span> Calendar &amp; Numbers
+      </button>
       <button class="nav-tab" id="tab-btn-history" data-tab="history">
-        <span class="tab-icon">📜</span> Session History &amp; Logs
+        <span class="tab-icon">🕒</span> Session History
       </button>
     </div>
   </nav>
@@ -60,7 +67,7 @@
         <div class="card-header voice-header">
           <div>
             <h2 class="hero-title">Real-Time Spoken Voice Translator</h2>
-            <p class="section-desc">Speak in <strong>English, Hindi, Nepali, or any world language</strong> — translates into authentic Kumaoni and synthesizes natural mountain pronunciation.</p>
+            <p class="section-desc">Speak in <strong>English, Hindi, or any language</strong> — translates into authentic Kumaoni with syllabic cadence, Devanagari &amp; Roman scripts, and mountain phonetics.</p>
           </div>
           <div class="voice-controls-top">
             <div class="form-group-inline">
@@ -75,7 +82,14 @@
                 <option value="es-ES">Spanish (Español)</option>
                 <option value="de-DE">German (Deutsch)</option>
                 <option value="ja-JP">Japanese (日本語)</option>
-                <option value="ru-RU">Russian (Русский)</option>
+              </select>
+            </div>
+            <div class="form-group-inline">
+              <label for="voice-target-dialect">Dialect:</label>
+              <select id="voice-target-dialect" class="styled-select select-compact">
+                <option value="central" selected>Central (Khasparjiya / Almora)</option>
+                <option value="eastern">Eastern (Kumaiya / Champawat)</option>
+                <option value="western">Western (Danpuriya / Bageshwar)</option>
               </select>
             </div>
             <div class="toggle-switch-wrapper">
@@ -85,6 +99,20 @@
               </label>
               <span class="toggle-label">⚡ Auto-Speak Audio</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Quick Prompts Bar for New Colloquial Vocabulary -->
+        <div class="quick-prompts-bar">
+          <span class="quick-prompt-label">✨ Try Latest Vocabulary:</span>
+          <div class="quick-prompt-chips">
+            <button class="prompt-chip" data-text="Where is mom?">Where is mom?</button>
+            <button class="prompt-chip" data-text="Dad is at home.">Dad is at home.</button>
+            <button class="prompt-chip" data-text="Grandpa and grandma are talking.">Grandpa &amp; Grandma</button>
+            <button class="prompt-chip" data-text="How are you bro?">How are you bro?</button>
+            <button class="prompt-chip" data-text="Where is the nearest hospital?">Nearest Hospital</button>
+            <button class="prompt-chip" data-text="I want mountain food.">Mountain Food</button>
+            <button class="prompt-chip" data-text="Is it cold in the mountains?">Mountain Weather</button>
           </div>
         </div>
 
@@ -115,7 +143,7 @@
                 <span class="box-label">Recognized Speech Input:</span>
                 <span id="speech-lang-tag" class="speech-tag">English (en-IN)</span>
               </div>
-              <textarea id="voice-input-text" class="speech-textarea" rows="3" placeholder="Speak into mic or type here... (e.g. 'Where is the hospital?', 'Did you eat food?')">Where is the nearest hospital?</textarea>
+              <textarea id="voice-input-text" class="speech-textarea" rows="3" placeholder="Speak into mic or type here... (e.g. 'Where is mom?', 'Where is the hospital?')">Where is mom?</textarea>
               <div class="speech-actions">
                 <button id="btn-voice-translate-manual" class="btn btn-secondary btn-sm">
                   <span>Translate &amp; Speak ➔</span>
@@ -138,17 +166,32 @@
             </div>
 
             <div class="voice-output-card">
-              <div id="voice-output-kumaoni" class="voice-kumaoni-text">पासक अस्पताल कसि छ?</div>
-              <div id="voice-output-roman" class="voice-roman-text">Paasak aspataal kasi chha?</div>
+              <div id="voice-output-kumaoni" class="voice-kumaoni-text">ईजा कहाँ छ?</div>
+              <div id="voice-output-roman" class="voice-roman-text">Ija kahaan chha?</div>
               
+              <!-- Syllable breakdown -->
               <div class="syllable-breakdown">
                 <span class="syllable-title">Syllables:</span>
                 <div id="voice-syllable-chips" class="syllable-chips">
-                  <span class="syl-chip">पा</span>
+                  <span class="syl-chip">ई</span>
                   <span class="syl-dot">&bull;</span>
-                  <span class="syl-chip">स</span>
-                  <span class="syl-dot">&bull;</span>
+                  <span class="syl-chip">जा</span>
+                  <span class="syl-space"> </span>
                   <span class="syl-chip">क</span>
+                  <span class="syl-dot">&bull;</span>
+                  <span class="syl-chip">हाँ</span>
+                  <span class="syl-space"> </span>
+                  <span class="syl-chip">छ</span>
+                </div>
+              </div>
+
+              <!-- Morphological Analysis Chips -->
+              <div class="tokens-analysis-box" id="tokens-analysis-box">
+                <span class="tokens-label">Grammar Insights:</span>
+                <div id="token-chips" class="token-chips">
+                  <span class="token-chip"><span class="token-word">ईजा</span> <span class="token-pos">Noun (Mom/Mother)</span></span>
+                  <span class="token-chip"><span class="token-word">कहाँ</span> <span class="token-pos">Adverb (Where)</span></span>
+                  <span class="token-chip"><span class="token-word">छ</span> <span class="token-pos">Verb (Is/To Be)</span></span>
                 </div>
               </div>
 
@@ -168,7 +211,7 @@
 
             <div class="phonetic-meta-footer">
               <span id="voice-meta-cadence" class="meta-tag">Cadence: Central Pahari / 0.92x</span>
-              <span id="voice-meta-conf" class="meta-tag">Authenticity: 100% Verified</span>
+              <span id="voice-meta-conf" class="meta-tag">Authenticity: 100% Native Lexicon</span>
             </div>
           </div>
         </div>
@@ -181,7 +224,7 @@
         <div class="card-header">
           <div>
             <h2>Two-Way Dialogue &amp; Conversation Studio</h2>
-            <p class="section-desc">Split-screen real-time conversation mode between a <strong>Visitor / Tourist</strong> (speaking English/Hindi) and a <strong>Kumaoni Native</strong> (speaking Kumaoni).</p>
+            <p class="section-desc">Split-screen real-time conversation between a <strong>Visitor / Tourist</strong> (English / Hindi) and a <strong>Kumaoni Native</strong> (कुमाऊँनी).</p>
           </div>
         </div>
         <div class="card-body dialogue-grid">
@@ -192,10 +235,15 @@
               <span class="lang-pill">English / Hindi</span>
             </div>
             <div class="col-body">
-              <textarea id="dialogue-visitor-input" class="dialogue-textarea" placeholder="Speak or type what the visitor wants to say... (e.g. 'Can you show me the mountain path?')">Can you show me the mountain path?</textarea>
-              <button id="btn-dialogue-visitor-speak" class="btn btn-primary btn-sm mt-2">
-                <span>🎙️ Speak as Visitor ➔</span>
-              </button>
+              <textarea id="dialogue-visitor-input" class="dialogue-textarea" placeholder="Speak or type what the visitor says... (e.g. 'Can you show me the mountain path?')">Can you show me the mountain path?</textarea>
+              <div class="dialogue-actions">
+                <button id="btn-dialogue-visitor-speak" class="btn btn-primary btn-sm">
+                  <span>🎙️ Speak as Visitor ➔</span>
+                </button>
+                <button id="btn-dialogue-visitor-mic" class="btn btn-outline btn-sm" title="Voice Input">
+                  🎤 Mic
+                </button>
+              </div>
             </div>
           </div>
 
@@ -207,9 +255,14 @@
             </div>
             <div class="col-body">
               <textarea id="dialogue-native-input" class="dialogue-textarea" placeholder="Speak or type Kumaoni response... (e.g. 'हौ दाज्यू, यो बाटो सीधा जाँछ।')">हौ दाज्यू, यो बाटो सीधा जाँछ।</textarea>
-              <button id="btn-dialogue-native-speak" class="btn btn-accent btn-sm mt-2">
-                <span>🎙️ Speak as Native ➔</span>
-              </button>
+              <div class="dialogue-actions">
+                <button id="btn-dialogue-native-speak" class="btn btn-accent btn-sm">
+                  <span>🎙️ Speak as Native ➔</span>
+                </button>
+                <button id="btn-dialogue-native-mic" class="btn btn-outline btn-sm" title="Voice Input">
+                  🎤 Mic
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -230,20 +283,29 @@
     <!-- 3. MOUNTAIN PHRASEBOARD TAB -->
     <section id="tab-phraseboard" class="tab-pane">
       <div class="card glass-card">
-        <div class="card-header">
+        <div class="card-header phraseboard-header">
           <div>
-            <h2>🏔️ पहाड़ी बोल-चाल (Spoken Mountain Dialogue Board)</h2>
-            <p class="section-desc">Tap any phrase to instantly translate, transcribe, and listen to natural Kumaoni speech.</p>
+            <h2>🏔️ पहाड़ी बोल-चाल (Spoken Mountain Phraseboard)</h2>
+            <p class="section-desc">Over 100+ curated mountain phrases. Click any card to instantly listen, inspect syllables, and copy.</p>
           </div>
-          <div class="phrase-category-tabs" id="voice-phrase-cat-tabs">
-            <button class="pcat-tab active" data-cat="all">All</button>
-            <button class="pcat-tab" data-cat="greetings">Greetings (पैलाग)</button>
-            <button class="pcat-tab" data-cat="travel">Travel (पहाड़ी बाटो)</button>
-            <button class="pcat-tab" data-cat="food">Food (खान-पान)</button>
-            <button class="pcat-tab" data-cat="emergency">Health (मदद/दवा)</button>
-            <button class="pcat-tab" data-cat="market">Market (बाजार)</button>
+          <div class="phraseboard-search-box">
+            <input type="text" id="phrase-search-input" class="styled-input" placeholder="🔍 Search phrases (e.g. hello, food, water, road)...">
           </div>
         </div>
+
+        <div class="phrase-category-tabs-scroll" id="voice-phrase-cat-tabs">
+          <button class="pcat-tab active" data-cat="all">All (100+)</button>
+          <button class="pcat-tab" data-cat="greetings">Greetings (पैलाग)</button>
+          <button class="pcat-tab" data-cat="travel">Travel (बाटो)</button>
+          <button class="pcat-tab" data-cat="food">Food (खान-पान)</button>
+          <button class="pcat-tab" data-cat="emergency">Health &amp; Help (मदद)</button>
+          <button class="pcat-tab" data-cat="weather">Weather (मौसम)</button>
+          <button class="pcat-tab" data-cat="family">Family (नाता-रिश्ता)</button>
+          <button class="pcat-tab" data-cat="hospitality">Hospitality (आदर)</button>
+          <button class="pcat-tab" data-cat="shopping">Market (बाजार)</button>
+          <button class="pcat-tab" data-cat="wisdom">Wisdom (ज्ञान)</button>
+        </div>
+
         <div class="card-body">
           <div id="voice-phrase-grid" class="voice-phrase-grid">
             <!-- Dynamically populated -->
@@ -252,19 +314,140 @@
       </div>
     </section>
 
-    <!-- 4. SESSION HISTORY & LOGS TAB -->
+    <!-- 4. HIMALAYAN WISDOM & CULTURE TAB -->
+    <section id="tab-wisdom" class="tab-pane">
+      <div class="card glass-card">
+        <div class="card-header">
+          <div>
+            <h2>📜 Himalayan Wisdom, Proverbs &amp; Lore</h2>
+            <p class="section-desc">Traditional Kumaoni proverbs (अखाण), interactive mountain riddles (आणा), and timeless Himalayan folk poetry.</p>
+          </div>
+          <div class="subnav-pills">
+            <button class="subnav-pill active" id="pill-proverbs" data-subtab="proverbs">📜 Proverbs (अखाण)</button>
+            <button class="subnav-pill" id="pill-riddles" data-subtab="riddles">🧩 Riddles (आणा)</button>
+            <button class="subnav-pill" id="pill-literature" data-subtab="literature">🎶 Folk Songs &amp; Epics</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Proverbs Subtab -->
+          <div id="subtab-pane-proverbs" class="subtab-pane active">
+            <div class="proverbs-toolbar">
+              <input type="text" id="proverb-search-input" class="styled-input" placeholder="🔍 Search proverbs by keyword or meaning...">
+              <span id="proverbs-count-badge" class="count-badge">45 Proverbs</span>
+            </div>
+            <div id="proverbs-grid" class="wisdom-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Riddles Subtab -->
+          <div id="subtab-pane-riddles" class="subtab-pane">
+            <div class="riddles-intro">
+              <p>Test your wit with authentic Pahari riddles handed down through generations! Tap <strong>"Reveal Answer"</strong> to see the solution in Devanagari and English.</p>
+            </div>
+            <div id="riddles-grid" class="wisdom-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Literature & Folk Songs Subtab -->
+          <div id="subtab-pane-literature" class="subtab-pane">
+            <div class="literature-showcase">
+              <div class="lit-hero-banner">
+                <div class="lit-badge">Classic Mountain Folk Song</div>
+                <h3>Bedu Pako Baramasa (बेड़ू पाको बारामासा)</h3>
+                <p class="lit-desc">The immortal anthem of the Kumaoni and Garhwali hills, composed by legendary folk icons and celebrated across the globe.</p>
+              </div>
+
+              <div id="literature-content-grid" class="literature-content-grid">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. KUMAONI CALENDAR & NUMBERS TAB -->
+    <section id="tab-calendar" class="tab-pane">
+      <div class="card glass-card">
+        <div class="card-header">
+          <div>
+            <h2>📅 Kumaoni Calendar, Seasons &amp; Number Converter</h2>
+            <p class="section-desc">Explore the 6 Himalayan seasons (ऋतु), 12 Kumaoni months, and convert any numeric value into authentic Pahari number words.</p>
+          </div>
+        </div>
+
+        <div class="card-body calendar-grid-layout">
+          <!-- Season & Calendar Column -->
+          <div class="calendar-panel">
+            <div class="current-season-card">
+              <span class="season-icon">🍂</span>
+              <div class="season-info">
+                <span class="season-lbl">Current Himalayan Season (ऋतु):</span>
+                <h3 id="calendar-current-season" class="season-title">शरद (Sharad / Autumn)</h3>
+                <p class="season-sub">Clear mountain skies, golden terraced fields, and cool crisp Himalayan breeze.</p>
+              </div>
+            </div>
+
+            <h4 class="mt-4 mb-2">🏔️ 12 Kumaoni Months (कुमाऊँनी मैना):</h4>
+            <div id="calendar-months-grid" class="months-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Number Converter Column -->
+          <div class="numbers-panel">
+            <div class="converter-card">
+              <h3>🔢 Kumaoni Number Converter</h3>
+              <p class="section-desc">Type any integer to get its spoken Kumaoni name, ordinal rank, and Devanagari numerals.</p>
+
+              <div class="converter-input-row mt-3">
+                <input type="number" id="num-convert-input" class="styled-input num-input" value="108" min="0" max="1000000">
+                <button id="btn-convert-num" class="btn btn-primary">Convert ➔</button>
+              </div>
+
+              <div class="converter-results-card mt-3">
+                <div class="res-row">
+                  <span class="res-label">Kumaoni Spoken:</span>
+                  <span id="num-res-words" class="res-value kumaoni-highlight">एक सौ आठ</span>
+                </div>
+                <div class="res-row">
+                  <span class="res-label">Romanized:</span>
+                  <span id="num-res-roman" class="res-value">Ek sau aath</span>
+                </div>
+                <div class="res-row">
+                  <span class="res-label">Ordinal Rank:</span>
+                  <span id="num-res-ordinal" class="res-value">१०८वाँ</span>
+                </div>
+                <div class="res-row">
+                  <span class="res-label">Devanagari Digits:</span>
+                  <span id="num-res-dev-digits" class="res-value">१०८</span>
+                </div>
+                <button id="btn-play-num-speech" class="btn btn-accent btn-sm mt-3">
+                  <span>🔊 Speak Number</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. SESSION HISTORY & LOGS TAB -->
     <section id="tab-history" class="tab-pane">
       <div class="card glass-card">
         <div class="card-header">
           <div>
-            <h2>📜 Voice Session History &amp; Audio Replay</h2>
-            <p class="section-desc">Chronological record of all translated and spoken voice utterances with instant audio replay.</p>
+            <h2>🕒 Voice Session History &amp; Audio Replay</h2>
+            <p class="section-desc">Chronological record of all translated and synthesized voice utterances with instant audio replay.</p>
           </div>
           <button id="btn-clear-history" class="btn btn-outline btn-sm">Clear History</button>
         </div>
         <div class="card-body">
           <div id="voice-history-list" class="voice-history-list">
-            <div class="history-empty">No voice records yet. Click the microphone to start speaking!</div>
+            <div class="history-empty">No voice records yet. Click the microphone or pick a prompt to start speaking!</div>
           </div>
         </div>
       </div>
@@ -274,7 +457,7 @@
 
   <footer class="app-footer">
     <div class="container footer-content">
-      <p>Kumaoni Voice AI Translator App &bull; Powered by the Kumaoni Language Standard Library &bull; Preserving Himalayan Heritage.</p>
+      <p>Kumaoni Voice AI &bull; Powered by the <strong>Kumaoni Language Standard Library</strong> (300,516+ Word Forms) &bull; Preserving Himalayan Heritage.</p>
     </div>
   </footer>
 
