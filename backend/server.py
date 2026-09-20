@@ -163,7 +163,26 @@ CONVERSATIONAL_HINGLISH_MAP = [
 
 # 2. English Conversational Patterns
 CONVERSATIONAL_EN_MAP = [
-    (r"\bwhy\s+is\s+this\s+not\s+(?:working|moving|running)\??\b", "यो किलै नि चलनो छ?"),
+    # Working / Functioning Queries (e.g. "why is does not working", "why is this not working")
+    (r"\bwhy\s+(?:is\s+)?(?:does\s+)?(?:it\s+|this\s+|that\s+)?(?:not\s+)?(?:working|work)\??\b", "यो किलै नि चलनो छ?"),
+    (r"\bwhy\s+(?:it\s+|this\s+|that\s+)?(?:is\s+)?not\s+working\??\b", "यो किलै नि चलनो छ?"),
+    (r"\b(?:it\s+|this\s+|that\s+)?(?:is\s+|does\s+)?not\s+working\b", "यो काम नि करनो छ।"),
+    (r"\b(?:it\s+|this\s+|that\s+)?is\s+working\b", "यो चलनो छ।"),
+    (r"\b(?:how\s+)?(?:does\s+)?it\s+work\??\b", "यो कस काम करँछ?"),
+    
+    # General Communication & Troubleshooting
+    (r"\bwhat\s+happened\??\b", "क्या भयो?"),
+    (r"\bwhat\s+is\s+happening\??\b", "क्या हुणो छ?"),
+    (r"\b(?:i\s+)?cannot\s+hear\s*(?:you|anything)?\b", "मूकै आवाज नि सुणिनी छ।"),
+    (r"\bcan\s+you\s+hear\s+me\??\b", "क्या तुम मूकै सुणि सकछा?"),
+    (r"\bi\s+don'?t\s+understand\b", "मेरी समझ में नि आयो।"),
+    (r"\b(?:please\s+)?help\s+me\b", "मेरी मदद करा दाज्यू!"),
+    (r"\bwhat\s+do\s+you\s+want\??\b", "तुमकै क्या चैं?"),
+    (r"\bi\s+don'?t\s+know\b", "मूकै नि मालूम।"),
+    (r"\bwhere\s+do\s+you\s+live\??\b", "तुम कहाँ रौँछा?"),
+    (r"\bwho\s+are\s+you\??\b", "तुम को छा?"),
+
+    # Questions
     (r"\bwhat\s+is\s+your\s+name\??\b", "तुमरो नाव क्या छ?"),
     (r"\bwhere\s+are\s+you\s+going\??\b", "तुम कहाँ जाँछा?"),
     (r"\bhow\s+much\s+does\s+this\s+cost\??\b", "यो कतिक रुप्याक छ?"),
@@ -246,6 +265,31 @@ def apply_dialect(text: str, dialect: str) -> str:
     return " ".join(res_words)
 
 
+def clean_kumaoni_translation(text: str, original_src: str) -> str:
+    """Cleans up auxiliary verbs, converts 'why' to 'किलै', and translates common gerunds."""
+    res = text
+    if re.search(r'\bwhy\b', original_src, re.IGNORECASE):
+        res = re.sub(r'^कै\b', 'किलै', res)
+        res = re.sub(r'(?<!\S)कै(?!\S)', 'किलै', res)
+
+    replacements = [
+        (r'\bworking\b', 'चलनो'),
+        (r'\bgoing\b', 'जाँछा'),
+        (r'\bdoing\b', 'करनो'),
+        (r'\bcoming\b', 'आँछा'),
+        (r'\bsleeping\b', 'सुता'),
+        (r'\beating\b', 'खाँदा'),
+        (r'\bdoes\b', ''),
+        (r'\bdo\b', ''),
+        (r'\bdid\b', ''),
+    ]
+    for pattern, repl in replacements:
+        res = re.sub(pattern, repl, res, flags=re.IGNORECASE)
+
+    res = re.sub(r'\s+', ' ', res).strip()
+    return res
+
+
 def enhance_translation(text: str, source_lang: str = "auto", dialect: str = "central") -> Tuple[str, str, float]:
     """
     Intelligently detects language (English, Hindi, Hinglish, Kumaoni) and performs
@@ -280,9 +324,10 @@ def enhance_translation(text: str, source_lang: str = "auto", dialect: str = "ce
                 return apply_dialect(kmy_out, dialect), "English", 1.0
 
         res = kumaoni.translate(clean, source="en")
-        translated = res.text if hasattr(res, "text") else str(res)
+        raw_translated = res.text if hasattr(res, "text") else str(res)
+        cleaned_translated = clean_kumaoni_translation(raw_translated, clean)
         conf = getattr(res, "confidence", 0.95)
-        return apply_dialect(translated, dialect), "English", conf
+        return apply_dialect(cleaned_translated, dialect), "English", conf
 
     # 4. Hindi Devanagari flow
     if effective_lang.startswith("hi"):

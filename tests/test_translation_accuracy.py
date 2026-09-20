@@ -47,11 +47,33 @@ class TestTranslatorAccuracy(unittest.TestCase):
         self.assertEqual(detect_source_language("ईजा कहाँ छ?"), "kmy")
 
     def test_hinglish_translation_user_case(self):
-        # Specific user case: "are yah chal Kyon Nahin raha hai"
+        # Specific user case 1: "are yah chal Kyon Nahin raha hai"
         trans, detected_lang, _ = enhance_translation("are yah chal Kyon Nahin raha hai", source_lang="auto")
         self.assertIn("Hinglish", detected_lang)
         self.assertIn("किलै नि चलनो छ", trans)
         self.assertNotIn("छन yah", trans)
+
+    def test_working_queries_and_user_dictation(self):
+        # Specific user case 2: "why is does not working" and related variations
+        cases = [
+            ("why is does not working", "यो किलै नि चलनो छ?"),
+            ("why is this not working", "यो किलै नि चलनो छ?"),
+            ("why is it not working", "यो किलै नि चलनो छ?"),
+            ("it is not working", "यो काम नि करनो छ।"),
+            ("this is working", "यो चलनो छ।"),
+            ("what happened?", "क्या भयो?"),
+            ("can you hear me?", "क्या तुम मूकै सुणि सकछा?"),
+        ]
+        for src, expected in cases:
+            trans, detected_lang, _ = enhance_translation(src, source_lang="auto")
+            self.assertEqual(
+                trans,
+                expected,
+                f"Expected '{expected}' for '{src}', got: '{trans}'"
+            )
+            self.assertNotIn("does", trans)
+            self.assertNotIn("working", trans)
+            self.assertNotIn("कै छ", trans)
 
     def test_kinship_and_colloquial_english(self):
         cases = [
