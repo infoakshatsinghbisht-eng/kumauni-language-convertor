@@ -24,10 +24,10 @@ BACKEND_DIR = CURRENT_DIR / "backend"
 FRONTEND_DIR = CURRENT_DIR / "frontend"
 
 POSSIBLE_LIB_PATHS = [
+    CURRENT_DIR,
     CURRENT_DIR.parent,
     CURRENT_DIR.parent / "kumaoni language library",
     CURRENT_DIR.parent.parent / "kumaoni language library",
-    CURRENT_DIR / "kumaoni",
 ]
 for p in POSSIBLE_LIB_PATHS:
     if p.exists() and str(p) not in sys.path:

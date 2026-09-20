@@ -22,9 +22,9 @@ import unittest
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 POSSIBLE_LIB_PATHS = [
+    PROJECT_DIR,
     PROJECT_DIR.parent,
     PROJECT_DIR.parent / "kumaoni language library",
-    PROJECT_DIR / "kumaoni",
 ]
 for p in POSSIBLE_LIB_PATHS:
     if p.exists() and str(p) not in sys.path:

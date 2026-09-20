@@ -17,10 +17,10 @@ from typing import Optional, List, Dict, Any, Tuple
 # Ensure kumaoni library is discoverable across different directory layouts
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 POSSIBLE_LIB_PATHS = [
+    PROJECT_ROOT,
     PROJECT_ROOT.parent,
     PROJECT_ROOT.parent / "kumaoni language library",
     PROJECT_ROOT.parent.parent / "kumaoni language library",
-    PROJECT_ROOT / "kumaoni",
 ]
 for p in POSSIBLE_LIB_PATHS:
     if p.exists() and str(p) not in sys.path:
