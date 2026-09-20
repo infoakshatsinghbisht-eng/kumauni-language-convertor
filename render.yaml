@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: kumauni-language-convertor
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run_app.py $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0

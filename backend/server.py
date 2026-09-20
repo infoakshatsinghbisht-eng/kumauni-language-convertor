@@ -950,7 +950,7 @@ def analyze_grammar(req: GrammarAnalyzeRequest):
 
 
 # =====================================================================
-# 6. AUDIO SYNTHESIS ENDPOINTS
+# 6. AUDIO SYNTHESIS & FRONTEND SERVING
 # =====================================================================
 
 @app.get("/api/voice/wav")
@@ -963,8 +963,26 @@ def get_synthesized_wav(
     return Response(content=wav_bytes, media_type="audio/wav")
 
 
+# Mount static frontend directory for web access
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+if FRONTEND_DIR.exists():
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    if (FRONTEND_DIR / "src").exists():
+        app.mount("/src", StaticFiles(directory=str(FRONTEND_DIR / "src")), name="src")
+
+    @app.get("/")
+    def serve_index():
+        index_file = FRONTEND_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {"message": "Kumaoni Voice Translator API is active. Visit /docs for API documentation."}
+
+
 if __name__ == "__main__":
     import uvicorn
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    print(f"Starting Kumaoni Voice Translator Backend on http://localhost:{port}")
-    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
+    port = int(os.environ.get("PORT", sys.argv[1] if len(sys.argv) > 1 else 8000))
+    print(f"Starting Kumaoni Voice Translator on http://0.0.0.0:{port}")
+    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=False)
+
