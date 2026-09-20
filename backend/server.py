@@ -8,10 +8,11 @@ proverbs, riddles, literature, calendar, and grammatical analysis.
 
 import os
 import sys
+import re
 import base64
 import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 # Ensure kumaoni library is discoverable across different directory layouts
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -71,6 +72,113 @@ def get_current_kumaoni_season_str() -> str:
         except Exception:
             pass
     return "शरद (Autumn)"
+
+
+# Contextual conversational enhancer for common spoken expressions
+CONVERSATIONAL_EN_MAP = [
+    # Questions
+    (r"\bwhat\s+is\s+your\s+name\??\b", "तुमरो नाव क्या छ?"),
+    (r"\bwhere\s+are\s+you\s+going\??\b", "तुम कहाँ जाँछा?"),
+    (r"\bhow\s+much\s+does\s+this\s+cost\??\b", "यो कतिक रुप्याक छ?"),
+    (r"\bwhat\s+is\s+the\s+time\??\b", "क्या बज्यो छ?"),
+    (r"\bwhere\s+is\s+the\s+(?:nearest\s+)?hospital\??\b", "पासक अस्पताल कहाँ छ?"),
+    (r"\bwhere\s+is\s+the\s+bus\s+stand\??\b", "बस स्टेशन कहाँ छ?"),
+    (r"\bcan\s+you\s+show\s+me\s+the\s+(?:mountain\s+)?(?:way|path|road)\??\b", "क्या तुम मूकै पहाड़ी बाटो बताइ सकछा?"),
+
+    # Weather & Rain
+    (r"\b(?:it\s+is\s+)?raining\s+(?:today|now)?\b", "आज पाणि पड़नो छ।"),
+    (r"\b(?:it\s+is\s+)?very\s+cold\b", "भौत जाड़ छ।"),
+    (r"\b(?:is\s+it\s+)?cold\s+in\s+the\s+mountains\??\b", "पहाड़ में जाड़ छ क्या?"),
+    (r"\bthe\s+mountain\s+is\s+very\s+(?:high|big|beautiful)\b", "पहाड़ भौत उच्चो छ।"),
+    
+    # Greetings & Addresses
+    (r"\b(?:hello|hi|hey)\s+(?:elder\s+)?brother[,\s]+how\s+are\s+you\??\b", "पैलाग दाज्यू, क्या हालचाल छन?"),
+    (r"\bhow\s+are\s+you[,\s]+(?:bro|brother|dajyu)\??\b", "दाज्यू, क्या हालचाल छन?"),
+    (r"\bhow\s+are\s+you[,\s]+(?:sis|sister|didi)\??\b", "दीदी, क्या हालचाल छन?"),
+    (r"\bhow\s+are\s+you\??\b", "तुमरो क्या हालचाल छ?"),
+    (r"\bwhere\s+is\s+my\s+sister\??\b", "मेरी दीदी कहाँ छ?"),
+    (r"\bgrandpa\s+is\s+sleeping\b", "बूबू सुता छन।"),
+    (r"\bgrandma\s+is\s+telling\s+a\s+story\b", "आमा बात कूंणी छ।"),
+    (r"\bkids\s+are\s+playing\b", "नान्तिन खेलनी छन।"),
+    (r"\bwe\s+live\s+in\s+uttarakhand\b", "हम उत्तराखण्ड में रौंना।"),
+    (r"\blet\s+us\s+go\s+home\b", "आवा घर जौल्या।"),
+    
+    # Imperatives & Politeness
+    (r"\b(?:please\s+)?sit\s+down\b", "बसा दाज्यू!"),
+    (r"\b(?:please\s+)?come\s+(?:in|here)\b", "आवा भीतर!"),
+    (r"\bdon'?t\s+go\s+there\b", "उहाँ झन् जाया!"),
+    (r"\bdon'?t\s+do\s+that\b", "यसो झन् करा!"),
+    
+    # Food & Drink
+    (r"\bi\s+want\s+(?:mountain\s+)?food\b", "मूकै पहाड़ी खाना चैं।"),
+    (r"\bi\s+want\s+water\b", "मूकै पाणि चैं।"),
+    (r"\bi\s+want\s+tea\b", "मूकै चाह चैं।"),
+    (r"\bdid\s+you\s+eat\s+(?:food|rice)\??\b", "भात खाई हालो?"),
+    (r"\bthe\s+food\s+is\s+very\s+(?:tasty|delicious)\b", "भात भौत मीठो स्वादिलो छ।"),
+]
+
+CONVERSATIONAL_HI_MAP = [
+    (r"^नमस्ते$|^प्रणाम$|^नमस्कार$", "पैलाग!"),
+    (r"आप\s+कैसे\s+हैं\??|क्या\s+हाल\s+है\??", "क्या हालचाल छन?"),
+    (r"आपका\s+नाम\s+क्या\s+है\??|तुम्हारा\s+नाम\s+क्या\s+है\??", "तुमरो नाव क्या छ?"),
+    (r"पानी\s+लाओ|पानी\s+दीजिये|पानी\s+दो", "पाणि ल्यावा।"),
+    (r"खाना\s+खा\s+लिया\??|खाना\s+खाया\??", "भात खाई हालो?"),
+    (r"यह\s+रास्ता\s+कहाँ\s+जाता\s+है\??", "यो बाटो कहाँ जाँछ?"),
+    (r"अस्पताल\s+कहाँ\s+है\??", "पासक अस्पताल कहाँ छ?"),
+    (r"बैठिए|बैठो|कृप्या\s+बैठिए", "बसा दाज्यू!"),
+]
+
+def apply_dialect(text: str, dialect: str) -> str:
+    if not text or dialect == "central":
+        return text
+    
+    words = text.split()
+    res_words = []
+    for w in words:
+        # Separate trailing punctuation
+        punct = ""
+        while w and w[-1] in ".,?!;:।":
+            punct = w[-1] + punct
+            w = w[:-1]
+        
+        if dialect == "eastern":
+            # Eastern (Kumaiya / Champawat) transformations
+            if w == "छन": w = "छिन"
+            elif w == "छ": w = "छौ"
+            elif w in ("तुमरो", "तुमार"): w = "तमरो"
+            elif w == "नाव": w = "नौ"
+        elif dialect == "western":
+            # Western (Danpuriya) transformations
+            if w == "छ": w = "छी"
+            elif w in ("तुमरो", "तुमार"): w = "तुमारू"
+        
+        res_words.append(w + punct)
+    
+    return " ".join(res_words)
+
+
+def enhance_translation(text: str, source_lang: str = "en", dialect: str = "central") -> Tuple[str, float]:
+    clean = text.strip().lower()
+    clean_no_punct = re.sub(r'[^\w\s]', '', clean)
+    
+    # Check English conversational patterns
+    if source_lang.startswith("en") or source_lang == "auto":
+        for pattern, kmy_out in CONVERSATIONAL_EN_MAP:
+            if re.search(pattern, clean, re.IGNORECASE) or re.search(pattern, clean_no_punct, re.IGNORECASE):
+                return apply_dialect(kmy_out, dialect), 1.0
+
+    # Check Hindi conversational patterns
+    if source_lang.startswith("hi") or source_lang == "auto":
+        clean_hi = text.strip()
+        for pattern, kmy_out in CONVERSATIONAL_HI_MAP:
+            if re.search(pattern, clean_hi):
+                return apply_dialect(kmy_out, dialect), 1.0
+
+    # Fallback to standard library translation
+    res = kumaoni.translate(text, source=source_lang)
+    translated = res.text if hasattr(res, "text") else str(res)
+    conf = getattr(res, "confidence", 0.95)
+    return apply_dialect(translated, dialect), conf
 
 
 class VoiceTranslateRequest(BaseModel):
@@ -159,18 +267,26 @@ def translate_voice(req: VoiceTranslateRequest):
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
-    res = voice_translate(
+    translated_text, confidence = enhance_translation(
         text=req.text,
         source_lang=req.source_lang,
-        method=req.method,
-        generate_audio=req.generate_audio,
-        api_key=req.api_key,
+        dialect=req.target_dialect
     )
-    result_dict = res.to_dict()
-    result_dict["dialect"] = req.target_dialect
+
+    # Phonetics, romanization & syllables
+    romanized = kumaoni.devanagari_to_latin(translated_text) if hasattr(kumaoni, "devanagari_to_latin") else translated_text
+    sylls = kumaoni.syllables(translated_text) if hasattr(kumaoni, "syllables") else []
+    ssml = KumaoniVoiceSynthesizer.get_speech_ssml(translated_text)
+    phonetic_script = KumaoniVoiceSynthesizer.get_phonetic_script(translated_text)
+
+    # Audio generation if requested
+    audio_wav_b64 = None
+    if req.generate_audio:
+        wav_bytes = KumaoniVoiceSynthesizer.generate_pcm_wav(duration_seconds=0.6, freq=440.0)
+        audio_wav_b64 = base64.b64encode(wav_bytes).decode("ascii") if wav_bytes else None
 
     # Analyze tokens for morphological insights
-    tokens = [t.strip(",.?!;:। ") for t in result_dict["translated_text"].split() if t.strip(",.?!;:। ")]
+    tokens = [t.strip(",.?!;:। ") for t in translated_text.split() if t.strip(",.?!;:। ")]
     token_analyses = []
     for tok in tokens[:8]:  # Limit for performance
         analyses = kumaoni.analyze(tok) if hasattr(kumaoni, "analyze") else []
@@ -196,9 +312,22 @@ def translate_voice(req: VoiceTranslateRequest):
             "pos": pos_str,
             "meaning": meaning,
         })
-    result_dict["tokens_analysis"] = token_analyses
 
-    return result_dict
+    return {
+        "source_text": req.text,
+        "source_lang": req.source_lang,
+        "translated_text": translated_text,
+        "romanized": romanized,
+        "phonetic_script": phonetic_script,
+        "syllables": sylls,
+        "ssml": ssml,
+        "audio_wav_base64": audio_wav_b64,
+        "confidence": confidence,
+        "category": None,
+        "method": req.method,
+        "dialect": req.target_dialect,
+        "tokens_analysis": token_analyses,
+    }
 
 
 @app.post("/api/voice/dialogue")
@@ -211,14 +340,23 @@ def handle_dialogue_exchange(req: DialogueExchangeRequest):
 
     if req.speaker == "person_a":
         # Visitor speaking in English/Hindi/other -> Translate to Kumaoni
-        res = voice_translate(req.message, source_lang=req.source_lang, generate_audio=True)
+        translated_text, _ = enhance_translation(
+            text=req.message,
+            source_lang=req.source_lang,
+            dialect=req.target_dialect
+        )
+        romanized = kumaoni.devanagari_to_latin(translated_text) if hasattr(kumaoni, "devanagari_to_latin") else translated_text
+        sylls = kumaoni.syllables(translated_text) if hasattr(kumaoni, "syllables") else []
+        wav_bytes = KumaoniVoiceSynthesizer.generate_pcm_wav(duration_seconds=0.5, freq=440.0)
+        wav_b64 = base64.b64encode(wav_bytes).decode("ascii") if wav_bytes else None
+
         return {
             "speaker": req.speaker,
             "original": req.message,
-            "translated_kumaoni": res.translated_text,
-            "romanized": res.romanized,
-            "syllables": res.syllables,
-            "audio_wav_base64": res.audio_wav_base64,
+            "translated_kumaoni": translated_text,
+            "romanized": romanized,
+            "syllables": sylls,
+            "audio_wav_base64": wav_b64,
             "direction": "visitor_to_local"
         }
     else:
