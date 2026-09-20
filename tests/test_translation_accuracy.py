@@ -199,6 +199,48 @@ class TestTranslatorAccuracy(unittest.TestCase):
         self.assertTrue("<speak>" in res["ssml"])
         self.assertIsNotNone(res["audio_wav_base64"])
 
+    def test_expanded_conversational_english(self):
+        cases = [
+            ("why are you not coming", "तुम किलै नि आँछा?"),
+            ("what are you doing", "तुम क्या करछा?"),
+            ("what is your village name", "तुमरा गाँव का नाव क्या छ?"),
+            ("where can i get a taxi", "टैक्सी कहाँ मिलली?"),
+            ("let us go", "आवा जौल्या!"),
+            ("stop the car", "यहाँ रुका दाज्यू!"),
+            ("are you coming tomorrow", "क्या तुम भाल औला?"),
+            ("call the police", "पुलिस कणी बुलावा!"),
+            ("call an ambulance", "एम्बुलेंस बुलावा!"),
+            ("where is the hotel", "होटल/कमरा कहाँ मिललो?"),
+            ("where is the washroom", "शौचालय/बाथरूम कहाँ छ?"),
+            ("thank you very much", "भौत-भौत धन्यवाद!"),
+            ("good night", "शुभ राति!"),
+            ("take care", "आपणी खैरियत रख्या।"),
+        ]
+        for src, expected in cases:
+            trans, detected_lang, _ = enhance_translation(src, source_lang="auto")
+            self.assertEqual(trans, expected, f"Failed on '{src}' -> got '{trans}', expected '{expected}'")
+
+    def test_hinglish_robustness(self):
+        cases = [
+            ("kuch khane ko milega", "के खाण मिललो?"),
+            ("paani milega kya", "पाणि मिललो क्या?"),
+            ("mujhe thand lag rahi hai", "मूकै जाड़ लागणो छ।"),
+            ("tum kahan se ho", "तुम कहाँ बटी छा?"),
+            ("aapka ghar kahan hai", "तुमरो घर कहाँ छ?"),
+            ("police ko bulao", "पुलिस कणी बुलावा!"),
+            ("ambulance bulao", "एम्बुलेंस बुलावा!"),
+            ("mujhe kumaoni sikhna hai", "मूकै कुमाऊँनी सीखण छ।"),
+            ("gaadi kab aayegi", "गाड़ी कब औली?"),
+            ("bus kab chalegi", "बस कब चलली?"),
+            ("madad karo", "मेरी मदद करा दाज्यू!"),
+            ("shubh ratri", "शुभ राति!"),
+        ]
+        for src, expected in cases:
+            trans, detected_lang, _ = enhance_translation(src, source_lang="auto")
+            self.assertIn("Hinglish", detected_lang, f"Failed language detection on '{src}'")
+            self.assertEqual(trans, expected, f"Failed on Hinglish '{src}' -> got '{trans}', expected '{expected}'")
+
 
 if __name__ == "__main__":
     unittest.main()
+
