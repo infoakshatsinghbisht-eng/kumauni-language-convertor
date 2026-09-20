@@ -100,3 +100,23 @@ When the backend is running, interactive Swagger API docs are available at **`ht
 - `POST /api/numbers/convert`: Converts integer numbers to Kumaoni words and Devanagari numerals.
 - `POST /api/grammar/analyze`: Morphological analysis and dictionary lookup.
 - `GET /api/voice/wav`: Synthesized uncompressed PCM WAV audio stream.
+
+---
+
+## 👤 Author & Creator Profile
+
+* **Creator & Author**: **Akshat Singh Bisht**
+* **Official Website**: [https://akshatsinghbisht.com/](https://akshatsinghbisht.com/)
+* **Email**: [infoakshatsinghbisht@gmail.com](mailto:infoakshatsinghbisht@gmail.com)
+* **LinkedIn**: [Akshat Singh Bisht on LinkedIn](https://www.linkedin.com/in/akshat-singh-bisht-digital-performance-marketing-specialist/)
+* **Amazon Author Profile**: [Akshat Singh Bisht on Amazon](https://www.amazon.com/stores/Akshat-Singh-Bisht/author/B0D5TYDT28?ref=sr_ntt_srch_lnk_1&qid=1789906571&sr=8-1&shoppingPortalEnabled=true)
+* **ResearchGate**: [Akshat Bisht on ResearchGate](https://www.researchgate.net/profile/Akshat-Bisht-8)
+* **GitHub**: [@infoakshatsinghbisht-eng](https://github.com/infoakshatsinghbisht-eng)
+* **Kumauni Repo**: [https://github.com/infoakshatsinghbisht-eng/kumauni-language-convertor](https://github.com/infoakshatsinghbisht-eng/kumauni-language-convertor)
+* **Garhwali Repo**: [https://github.com/infoakshatsinghbisht-eng/garhwali-language-library](https://github.com/infoakshatsinghbisht-eng/garhwali-language-library)
+* **Garhwali PyPI**: [https://pypi.org/project/garhwali/](https://pypi.org/project/garhwali/)
+
+---
+
+## 📄 License
+This project is licensed under the **MIT License** — dedicated to the computational preservation, linguistic research, and cultural advancement of the Himalayan languages of Uttarakhand.
