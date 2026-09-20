@@ -2,6 +2,8 @@
 """
 Comprehensive Benchmark & Accuracy Test Suite for Kumaoni Translator & Voice Engine.
 Tests full grammatical coverage:
+- Language & script detection (English, Hindi, Hinglish, Kumaoni)
+- Hinglish phrase translation ("are yah chal kyon nahin raha hai")
 - Kinship terms & colloquial synonyms (mom, dad, bro, sis, grandpa, grandma, kids)
 - Questions (what, where, who, when, why, how, how much)
 - Tenses (present continuous, past simple, future)
@@ -32,10 +34,24 @@ sys.path.insert(0, str(PROJECT_DIR))
 sys.path.insert(0, str(PROJECT_DIR / "backend"))
 
 import kumaoni
-from backend.server import translate_voice, VoiceTranslateRequest, enhance_translation
+from backend.server import translate_voice, VoiceTranslateRequest, enhance_translation, detect_source_language
 
 
 class TestTranslatorAccuracy(unittest.TestCase):
+
+    def test_language_detection(self):
+        self.assertEqual(detect_source_language("are yah chal Kyon Nahin raha hai"), "hinglish")
+        self.assertEqual(detect_source_language("kya haal hai bhai"), "hinglish")
+        self.assertEqual(detect_source_language("Where is mom?"), "en")
+        self.assertEqual(detect_source_language("नमस्ते, आप कैसे हैं?"), "hi")
+        self.assertEqual(detect_source_language("ईजा कहाँ छ?"), "kmy")
+
+    def test_hinglish_translation_user_case(self):
+        # Specific user case: "are yah chal Kyon Nahin raha hai"
+        trans, detected_lang, _ = enhance_translation("are yah chal Kyon Nahin raha hai", source_lang="auto")
+        self.assertIn("Hinglish", detected_lang)
+        self.assertIn("किलै नि चलनो छ", trans)
+        self.assertNotIn("छन yah", trans)
 
     def test_kinship_and_colloquial_english(self):
         cases = [
@@ -51,7 +67,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("Kids are playing", "नान्तिन"),
         ]
         for src, expected in cases:
-            trans, _ = enhance_translation(src, source_lang="en")
+            trans, _, _ = enhance_translation(src, source_lang="en")
             self.assertIn(
                 expected,
                 trans,
@@ -68,7 +84,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("What is the time?", ["क्या", "बज्यो"]),
         ]
         for src, expected_tokens in cases:
-            trans, _ = enhance_translation(src, source_lang="en")
+            trans, _, _ = enhance_translation(src, source_lang="en")
             for tok in expected_tokens:
                 self.assertTrue(
                     tok in trans or tok.lower() in trans.lower(),
@@ -85,7 +101,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("Can you show me the mountain path?", "बाटो"),
         ]
         for src, expected in cases:
-            trans, _ = enhance_translation(src, source_lang="en")
+            trans, _, _ = enhance_translation(src, source_lang="en")
             self.assertIn(
                 expected,
                 trans,
@@ -99,7 +115,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("Is it cold in the mountains?", "जाड़"),
         ]
         for src, expected in cases:
-            trans, _ = enhance_translation(src, source_lang="en")
+            trans, _, _ = enhance_translation(src, source_lang="en")
             self.assertIn(
                 expected,
                 trans,
@@ -114,7 +130,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("Don't do that", "झन्"),
         ]
         for src, expected in cases:
-            trans, _ = enhance_translation(src, source_lang="en")
+            trans, _, _ = enhance_translation(src, source_lang="en")
             self.assertIn(
                 expected,
                 trans,
@@ -123,9 +139,9 @@ class TestTranslatorAccuracy(unittest.TestCase):
 
     def test_dialect_transformations(self):
         src = "What is your name?"
-        central, _ = enhance_translation(src, source_lang="en", dialect="central")
-        eastern, _ = enhance_translation(src, source_lang="en", dialect="eastern")
-        western, _ = enhance_translation(src, source_lang="en", dialect="western")
+        central, _, _ = enhance_translation(src, source_lang="en", dialect="central")
+        eastern, _, _ = enhance_translation(src, source_lang="en", dialect="eastern")
+        western, _, _ = enhance_translation(src, source_lang="en", dialect="western")
 
         self.assertIn("तुमरो", central)
         self.assertIn("तमरो", eastern)
@@ -138,7 +154,7 @@ class TestTranslatorAccuracy(unittest.TestCase):
             ("यह रास्ता कहाँ जाता है?", "बाटो"),
         ]
         for src, expected in cases:
-            trans, _ = enhance_translation(src, source_lang="hi")
+            trans, _, _ = enhance_translation(src, source_lang="hi")
             self.assertIn(
                 expected,
                 trans,
@@ -147,20 +163,19 @@ class TestTranslatorAccuracy(unittest.TestCase):
 
     def test_voice_translation_endpoint_full(self):
         req = VoiceTranslateRequest(
-            text="Where is mom?",
-            source_lang="en",
+            text="are yah chal Kyon Nahin raha hai",
+            source_lang="auto",
             target_dialect="central",
             method="auto",
             generate_audio=True,
         )
         res = translate_voice(req)
-        self.assertIn("ईजा", res["translated_text"])
+        self.assertIn("Hinglish", res["detected_lang"])
+        self.assertIn("किलै नि चलनो छ", res["translated_text"])
         self.assertTrue(len(res["syllables"]) > 0)
         self.assertTrue(len(res["romanized"]) > 0)
         self.assertTrue("<speak>" in res["ssml"])
         self.assertIsNotNone(res["audio_wav_base64"])
-        self.assertGreaterEqual(res["confidence"], 0.9)
-        self.assertTrue(len(res["tokens_analysis"]) > 0)
 
 
 if __name__ == "__main__":

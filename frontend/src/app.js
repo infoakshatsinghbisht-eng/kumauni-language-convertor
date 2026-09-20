@@ -343,6 +343,12 @@ document.addEventListener("DOMContentLoaded", () => {
       lastRomanText = data.romanized;
       lastAudioWavB64 = data.audio_wav_base64;
 
+      if (speechLangTag && data.detected_lang) {
+        speechLangTag.textContent = `⚡ Detected: ${data.detected_lang}`;
+        speechLangTag.style.background = "rgba(245, 158, 11, 0.2)";
+        speechLangTag.style.color = "#fbbf24";
+      }
+
       if (voiceOutputKumaoni) voiceOutputKumaoni.textContent = data.translated_text;
       if (voiceOutputRoman) voiceOutputRoman.textContent = data.romanized;
 

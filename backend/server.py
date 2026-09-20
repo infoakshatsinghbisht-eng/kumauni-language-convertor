@@ -2,8 +2,8 @@
 """
 Kumaoni Voice Translator - FastAPI Backend Server.
 Provides high-performance REST and streaming APIs for voice translation,
-speech phonetics analysis, SSML generation, PCM WAV audio synthesis,
-proverbs, riddles, literature, calendar, and grammatical analysis.
+intelligent language & script detection (English, Hindi, Hinglish, Kumaoni),
+phonetics analysis, SSML generation, and PCM WAV audio synthesis.
 """
 
 import os
@@ -42,7 +42,7 @@ except ImportError as e:
 app = FastAPI(
     title="Kumaoni Voice Translator API",
     description="Official REST & Voice Synthesis API for Kumaoni Language Translation and Himalayan Heritage",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 # Enable CORS for local Vite dev server and production frontends
@@ -74,9 +74,96 @@ def get_current_kumaoni_season_str() -> str:
     return "शरद (Autumn)"
 
 
-# Contextual conversational enhancer for common spoken expressions
+# =====================================================================
+# 0. INTELLIGENT MULTILINGUAL & HINGLISH DETECTOR
+# =====================================================================
+
+HINGLISH_VOCABULARY = {
+    'yah', 'yeh', 'ye', 'voh', 'wo', 'vo', 'kya', 'kyo', 'kyon', 'kyu', 'kyun', 'nahi', 'nahin', 'nai', 'ni',
+    'hai', 'hain', 'ho', 'hoon', 'hun', 'tha', 'the', 'thi', 'raha', 'rahe', 'rahi', 'chal', 'chalo',
+    'kahan', 'kaha', 'kidhar', 'kaise', 'kaisa', 'kaisi', 'kas', 'kasa', 'mujhe', 'mujhko', 'tera', 'mera', 'meri', 'mere',
+    'hum', 'hamara', 'aap', 'aapka', 'aapki', 'tum', 'tumhara', 'tumro', 'bhai', 'bhaiya', 'dajyu', 'didi',
+    'ija', 'babu', 'bubu', 'aama', 'karo', 'bolo', 'batao', 'suno', 'kuch', 'kuchh', 'achha', 'accha',
+    'theek', 'thik', 'dekh', 'dekho', 'jaa', 'jao', 'aao', 'baitho', 'pani', 'paani', 'khana', 'naam',
+    'are', 'arey', 'yaar', 'mat', 'rahe', 'rahi', 'gaya', 'gayi', 'gaye', 'kar', 'karna', 'karo', 'bol',
+    'bhookh', 'pyas', 'bataiye', 'chahiye', 'rasta', 'batado', 'batao', 'kaun', 'kab', 'kaise', 'bata'
+}
+
+def detect_source_language(text: str) -> str:
+    """
+    Detects whether input is:
+    - 'kmy' (Kumaoni Devanagari)
+    - 'hi' (Hindi Devanagari)
+    - 'hinglish' (Romanized Hindi / Hinglish)
+    - 'en' (English)
+    """
+    cleaned = text.strip()
+    if not cleaned:
+        return 'en'
+
+    # 1. Check Devanagari script
+    if re.search(r'[\u0900-\u097F]', cleaned):
+        kumaoni_markers = {'छ', 'छन', 'छूँ', 'छौ', 'कणी', 'बटि', 'दगड़', 'झनि', 'झन्', 'पैलाग', 'नान्तिन', 'ईजा', 'बाबु', 'दाज्यू', 'दीदी', 'बूबू', 'आमा', 'पाणि', 'भात', 'किलै'}
+        words = set(re.findall(r'[\u0900-\u097F]+', cleaned))
+        if words & kumaoni_markers:
+            return 'kmy'
+        return 'hi'
+
+    # 2. Latin script - detect Hinglish vs English
+    tokens = [t.lower() for t in re.findall(r'[a-zA-Z]+', cleaned)]
+    if not tokens:
+        return 'en'
+
+    hinglish_count = sum(1 for t in tokens if t in HINGLISH_VOCABULARY)
+    
+    # Specific Hinglish multi-token phrase checks
+    if any(p in cleaned.lower() for p in [
+        "chal kyon", "chal kyu", "chal raha", "kyon nahi", "kyu nahi", "nahi raha", "kya haal",
+        "kahan ja", "naam kya", "pani lao", "pani do", "bhookh lagi", "rasta kahan", "are yah", "arey yeh"
+    ]):
+        return 'hinglish'
+
+    if hinglish_count >= 2 or (len(tokens) <= 3 and hinglish_count >= 1):
+        return 'hinglish'
+
+    return 'en'
+
+
+# =====================================================================
+# CONVERSATIONAL TRANSLATION MAPS
+# =====================================================================
+
+# 1. Hinglish to Kumaoni Conversational Patterns
+CONVERSATIONAL_HINGLISH_MAP = [
+    # "are yah chal kyon nahin raha hai" -> "अरे यो किलै नि चलनो छ?"
+    (r"\b(?:are|arey|oye)?\s*(?:yah|yeh|ye)\s*(?:chal\s*)?(?:kyon|kyu|kyun)\s*nah?in?\s*(?:chal\s*)?raha\s*hai\??\b", "अरे यो किलै नि चलनो छ?"),
+    (r"\b(?:are|arey)?\s*(?:ye|yeh|yah)\s*kya\s*ho\s*raha\s*hai\??\b", "अरे यो क्या हुणो छ?"),
+    (r"\b(?:kya|kaise)\s*haal\s*(?:hai|chha)\b", "क्या हालचाल छन?"),
+    (r"\bkaise\s*ho\s*(?:bhai|dajyu|bro|yaar)?\??\b", "कस छू तुम दाज्यू?"),
+    (r"\baap\s*kaise\s*hain\??\b", "पैलाग, क्या हालचाल छन?"),
+    (r"\b(?:aapka|tera|tumhara)\s*naam\s*kya\s*hai\??\b", "तुमरो नाव क्या छ?"),
+    (r"\bkahan\s*ja\s*rahe\s*ho\??\b", "कहाँ जाँछा तुम?"),
+    (r"\bkhana\s*kha\s*(?:liya|rahe)\s*(?:ho|hai)?\??\b", "भात खाई हालो?"),
+    (r"\bpani\s*(?:lao|do|chahiye)\b", "मूकै पाणि चैं।"),
+    (r"\bcha[ih]\s*(?:lao|do|chahiye)\b", "मूकै चाह चैं।"),
+    (r"\b(?:ye|yeh|yah)\s*kya\s*hai\??\b", "यो क्या छ?"),
+    (r"\bkuch\s*nah?in?\b", "के नि।"),
+    (r"\b(?:mujhe|mujhko)\s*bhookh\s*lagi\s*hai\b", "मूकै भूख लागि गै।"),
+    (r"\b(?:mujhe|mujhko)\s*pyas\s*lagi\s*hai\b", "मूकै प्यास लागि गै।"),
+    (r"\b(?:ye|yeh|yah)\s*rasta\s*kahan\s*jata\s*hai\??\b", "यो बाटो कहाँ जाँछ?"),
+    (r"\btheek\s*hai\b|\bachha\s*hai\b", "ठीक छ, भल छ।"),
+    (r"\byahan\s*aao\b|\bidhar\s*aao\b", "यहाँ आवा!"),
+    (r"\bwahan\s*mat\s*jao\b|\budhar\s*mat\s*jao\b", "उहाँ झन् जाया!"),
+    (r"\bbaith\s*jao\b|\bbaithiye\b", "बसा दाज्यू!"),
+    (r"\baspataal\s*kahan\s*hai\??\b|\bhospital\s*kahan\s*hai\??\b", "पासक अस्पताल कहाँ छ?"),
+    (r"\bbus\s*stand\s*kahan\s*hai\??\b", "बस स्टेशन कहाँ छ?"),
+    (r"\bghar\s*chalo\b|\bghar\s*jayein\b", "आवा घर जौल्या।"),
+    (r"\bkya\s*baja\s*hai\??\b|\btime\s*kya\s*hai\??\b", "क्या बज्यो छ?"),
+]
+
+# 2. English Conversational Patterns
 CONVERSATIONAL_EN_MAP = [
-    # Questions
+    (r"\bwhy\s+is\s+this\s+not\s+(?:working|moving|running)\??\b", "यो किलै नि चलनो छ?"),
     (r"\bwhat\s+is\s+your\s+name\??\b", "तुमरो नाव क्या छ?"),
     (r"\bwhere\s+are\s+you\s+going\??\b", "तुम कहाँ जाँछा?"),
     (r"\bhow\s+much\s+does\s+this\s+cost\??\b", "यो कतिक रुप्याक छ?"),
@@ -117,6 +204,7 @@ CONVERSATIONAL_EN_MAP = [
     (r"\bthe\s+food\s+is\s+very\s+(?:tasty|delicious)\b", "भात भौत मीठो स्वादिलो छ।"),
 ]
 
+# 3. Hindi Conversational Patterns
 CONVERSATIONAL_HI_MAP = [
     (r"^नमस्ते$|^प्रणाम$|^नमस्कार$", "पैलाग!"),
     (r"आप\s+कैसे\s+हैं\??|क्या\s+हाल\s+है\??", "क्या हालचाल छन?"),
@@ -128,27 +216,28 @@ CONVERSATIONAL_HI_MAP = [
     (r"बैठिए|बैठो|कृप्या\s+बैठिए", "बसा दाज्यू!"),
 ]
 
+
 def apply_dialect(text: str, dialect: str) -> str:
+    """Applies authentic Kumaoni dialectal phonetic inflections."""
     if not text or dialect == "central":
         return text
     
     words = text.split()
     res_words = []
     for w in words:
-        # Separate trailing punctuation
         punct = ""
         while w and w[-1] in ".,?!;:।":
             punct = w[-1] + punct
             w = w[:-1]
         
         if dialect == "eastern":
-            # Eastern (Kumaiya / Champawat) transformations
+            # Eastern (Kumaiya / Champawat / Kali Kumaon)
             if w == "छन": w = "छिन"
             elif w == "छ": w = "छौ"
             elif w in ("तुमरो", "तुमार"): w = "तमरो"
             elif w == "नाव": w = "नौ"
         elif dialect == "western":
-            # Western (Danpuriya) transformations
+            # Western (Danpuriya / Bageshwar)
             if w == "छ": w = "छी"
             elif w in ("तुमरो", "तुमार"): w = "तुमारू"
         
@@ -157,33 +246,68 @@ def apply_dialect(text: str, dialect: str) -> str:
     return " ".join(res_words)
 
 
-def enhance_translation(text: str, source_lang: str = "en", dialect: str = "central") -> Tuple[str, float]:
-    clean = text.strip().lower()
-    clean_no_punct = re.sub(r'[^\w\s]', '', clean)
-    
-    # Check English conversational patterns
-    if source_lang.startswith("en") or source_lang == "auto":
+def enhance_translation(text: str, source_lang: str = "auto", dialect: str = "central") -> Tuple[str, str, float]:
+    """
+    Intelligently detects language (English, Hindi, Hinglish, Kumaoni) and performs
+    high-accuracy context-aware translation.
+    Returns: (translated_text, detected_language, confidence)
+    """
+    clean = text.strip()
+    clean_lower = clean.lower()
+    clean_no_punct = re.sub(r'[^\w\s]', '', clean_lower)
+
+    # 1. Detect language if auto
+    effective_lang = source_lang
+    if not effective_lang or effective_lang == "auto":
+        effective_lang = detect_source_language(clean)
+
+    # 2. Hinglish / Romanized Hindi flow
+    if effective_lang == "hinglish":
+        for pattern, kmy_out in CONVERSATIONAL_HINGLISH_MAP:
+            if re.search(pattern, clean_lower, re.IGNORECASE) or re.search(pattern, clean_no_punct, re.IGNORECASE):
+                return apply_dialect(kmy_out, dialect), "Hinglish (Romanized Hindi)", 1.0
+        
+        # General Hinglish fallback: transliterate to Devanagari Hindi and translate
+        dev_trans = kumaoni.latin_to_devanagari(clean) if hasattr(kumaoni, "latin_to_devanagari") else clean
+        res = kumaoni.translate(dev_trans, source="hi")
+        translated = res.text if hasattr(res, "text") else str(res)
+        return apply_dialect(translated, dialect), "Hinglish (Romanized Hindi)", 0.92
+
+    # 3. English flow
+    if effective_lang.startswith("en"):
         for pattern, kmy_out in CONVERSATIONAL_EN_MAP:
-            if re.search(pattern, clean, re.IGNORECASE) or re.search(pattern, clean_no_punct, re.IGNORECASE):
-                return apply_dialect(kmy_out, dialect), 1.0
+            if re.search(pattern, clean_lower, re.IGNORECASE) or re.search(pattern, clean_no_punct, re.IGNORECASE):
+                return apply_dialect(kmy_out, dialect), "English", 1.0
 
-    # Check Hindi conversational patterns
-    if source_lang.startswith("hi") or source_lang == "auto":
-        clean_hi = text.strip()
+        res = kumaoni.translate(clean, source="en")
+        translated = res.text if hasattr(res, "text") else str(res)
+        conf = getattr(res, "confidence", 0.95)
+        return apply_dialect(translated, dialect), "English", conf
+
+    # 4. Hindi Devanagari flow
+    if effective_lang.startswith("hi"):
         for pattern, kmy_out in CONVERSATIONAL_HI_MAP:
-            if re.search(pattern, clean_hi):
-                return apply_dialect(kmy_out, dialect), 1.0
+            if re.search(pattern, clean):
+                return apply_dialect(kmy_out, dialect), "Hindi (हिन्दी)", 1.0
 
-    # Fallback to standard library translation
-    res = kumaoni.translate(text, source=source_lang)
+        res = kumaoni.translate(clean, source="hi")
+        translated = res.text if hasattr(res, "text") else str(res)
+        conf = getattr(res, "confidence", 0.95)
+        return apply_dialect(translated, dialect), "Hindi (हिन्दी)", conf
+
+    # 5. Native Kumaoni flow
+    if effective_lang == "kmy":
+        return clean, "Kumaoni (कुमाऊँनी)", 1.0
+
+    # Fallback to general library translation
+    res = kumaoni.translate(clean, source=effective_lang)
     translated = res.text if hasattr(res, "text") else str(res)
-    conf = getattr(res, "confidence", 0.95)
-    return apply_dialect(translated, dialect), conf
+    return apply_dialect(translated, dialect), effective_lang, 0.90
 
 
 class VoiceTranslateRequest(BaseModel):
     text: str = Field(..., description="Source text or spoken transcript to translate")
-    source_lang: str = Field("auto", description="Source language code (e.g., 'en', 'hi', 'fr', 'auto')")
+    source_lang: str = Field("auto", description="Source language code (e.g., 'en', 'hi', 'hinglish', 'auto')")
     target_dialect: str = Field("central", description="Kumaoni dialect ('central', 'eastern', 'western')")
     method: str = Field("auto", description="Translation engine ('auto', 'rule_based', 'pivot', 'llm')")
     generate_audio: bool = Field(True, description="Whether to include base64 audio and pitch envelope")
@@ -193,6 +317,7 @@ class VoiceTranslateRequest(BaseModel):
 class VoiceTranslateResponse(BaseModel):
     source_text: str
     source_lang: str
+    detected_lang: str
     translated_text: str
     romanized: str
     phonetic_script: Dict[str, Any]
@@ -209,7 +334,7 @@ class VoiceTranslateResponse(BaseModel):
 class DialogueExchangeRequest(BaseModel):
     speaker: str = Field("person_a", description="'person_a' (Tourist/Visitor) or 'person_b' (Local Resident)")
     message: str = Field(..., description="Spoken message")
-    source_lang: str = Field("en", description="Language of speaker ('en', 'hi', 'kmy', etc.)")
+    source_lang: str = Field("auto", description="Language of speaker ('auto', 'en', 'hi', 'hinglish', 'kmy')")
     target_dialect: str = Field("central", description="Dialect preference ('central', 'eastern', 'western')")
 
 
@@ -244,7 +369,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": "kumaoni-voice-translator",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "library_version": getattr(kumaoni, "__version__", "1.0.0"),
         "total_morph_words": total_words,
         "phrases_count": phrases_count,
@@ -262,12 +387,13 @@ def health_check():
 def translate_voice(req: VoiceTranslateRequest):
     """
     Main Voice Translation endpoint.
-    Translates input text into authentic Kumaoni with syllabic breakdown, SSML, and audio.
+    Automatically detects language (English, Hindi, Hinglish, Kumaoni),
+    translates into authentic Kumaoni with syllabic breakdown, SSML, and audio.
     """
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
-    translated_text, confidence = enhance_translation(
+    translated_text, detected_lang, confidence = enhance_translation(
         text=req.text,
         source_lang=req.source_lang,
         dialect=req.target_dialect
@@ -316,6 +442,7 @@ def translate_voice(req: VoiceTranslateRequest):
     return {
         "source_text": req.text,
         "source_lang": req.source_lang,
+        "detected_lang": detected_lang,
         "translated_text": translated_text,
         "romanized": romanized,
         "phonetic_script": phonetic_script,
@@ -339,8 +466,8 @@ def handle_dialogue_exchange(req: DialogueExchangeRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     if req.speaker == "person_a":
-        # Visitor speaking in English/Hindi/other -> Translate to Kumaoni
-        translated_text, _ = enhance_translation(
+        # Visitor speaking in English / Hindi / Hinglish -> Translate to Kumaoni
+        translated_text, detected_lang, _ = enhance_translation(
             text=req.message,
             source_lang=req.source_lang,
             dialect=req.target_dialect
@@ -353,6 +480,7 @@ def handle_dialogue_exchange(req: DialogueExchangeRequest):
         return {
             "speaker": req.speaker,
             "original": req.message,
+            "detected_lang": detected_lang,
             "translated_kumaoni": translated_text,
             "romanized": romanized,
             "syllables": sylls,
@@ -370,6 +498,7 @@ def handle_dialogue_exchange(req: DialogueExchangeRequest):
         return {
             "speaker": req.speaker,
             "original": req.message,
+            "detected_lang": "Kumaoni",
             "translated_kumaoni": req.message,
             "translated_english": res_tr.text if hasattr(res_tr, "text") else str(res_tr),
             "romanized": romanized,

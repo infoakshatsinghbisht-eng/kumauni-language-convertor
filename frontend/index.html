@@ -73,8 +73,9 @@
             <div class="form-group-inline">
               <label for="voice-source-lang">Spoken Language:</label>
               <select id="voice-source-lang" class="styled-select select-compact">
-                <option value="en-IN" selected>English (India / Global)</option>
-                <option value="hi-IN">Hindi (हिन्दी)</option>
+                <option value="auto" selected>🌐 Auto-Detect (English / Hinglish / Hindi)</option>
+                <option value="en-IN">English (India / Global)</option>
+                <option value="hi-IN">Hindi (हिन्दी / Hinglish)</option>
                 <option value="ne-NP">Nepali (नेपाली)</option>
                 <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
                 <option value="bn-IN">Bengali (বাংলা)</option>
@@ -104,15 +105,15 @@
 
         <!-- Quick Prompts Bar for New Colloquial Vocabulary -->
         <div class="quick-prompts-bar">
-          <span class="quick-prompt-label">✨ Try Latest Vocabulary:</span>
+          <span class="quick-prompt-label">✨ Try Prompts (English &amp; Hinglish):</span>
           <div class="quick-prompt-chips">
+            <button class="prompt-chip" data-text="are yah chal kyon nahin raha hai">are yah chal kyon nahin raha hai</button>
             <button class="prompt-chip" data-text="Where is mom?">Where is mom?</button>
             <button class="prompt-chip" data-text="Dad is at home.">Dad is at home.</button>
-            <button class="prompt-chip" data-text="Grandpa and grandma are talking.">Grandpa &amp; Grandma</button>
+            <button class="prompt-chip" data-text="kya haal hai bhai?">kya haal hai bhai?</button>
             <button class="prompt-chip" data-text="How are you bro?">How are you bro?</button>
             <button class="prompt-chip" data-text="Where is the nearest hospital?">Nearest Hospital</button>
             <button class="prompt-chip" data-text="I want mountain food.">Mountain Food</button>
-            <button class="prompt-chip" data-text="Is it cold in the mountains?">Mountain Weather</button>
           </div>
         </div>
 
