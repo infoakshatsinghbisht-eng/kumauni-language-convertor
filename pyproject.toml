@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kumaoni"
+version = "1.0.0"
+authors = [
+    { name = "Akshat Singh Bisht", email = "infoakshatsinghbisht@gmail.com" }
+]
+maintainers = [
+    { name = "Akshat Singh Bisht", email = "infoakshatsinghbisht@gmail.com" }
+]
+description = "Kumaoni (कुमाऊँनी) Language Standard Library: 300,516+ Inflections, Voice AI, Speech Translation, and Himalayan Culture"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing :: Linguistic"
+]
+
+[project.urls]
+"Homepage" = "https://akshatsinghbisht.com/"
+"GitHub" = "https://github.com/infoakshatsinghbisht-eng/kumauni-language-convertor"
+"LinkedIn" = "https://www.linkedin.com/in/akshat-singh-bisht-digital-performance-marketing-specialist/"
+"Amazon Author" = "https://www.amazon.com/stores/Akshat-Singh-Bisht/author/B0D5TYDT28"
+"ResearchGate" = "https://www.researchgate.net/profile/Akshat-Bisht-8"
+"Bug Tracker" = "https://github.com/infoakshatsinghbisht-eng/kumauni-language-convertor/issues"

@@ -1,10 +1,20 @@
 # 🎙️ Kumaoni Voice Translator (कुमाऊँनी आवाज अनुवादक)
 
+[![Creator](https://img.shields.io/badge/Author%20%26%20Creator-Akshat%20Singh%20Bisht-orange.svg?style=for-the-badge&logo=person)](https://akshatsinghbisht.com/)
+[![Website](https://img.shields.io/badge/Official%20Website-akshatsinghbisht.com-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://akshatsinghbisht.com/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/akshat-singh-bisht-digital-performance-marketing-specialist/)
+[![ResearchGate](https://img.shields.io/badge/ResearchGate-Publications-00CCBB?style=for-the-badge&logo=researchgate&logoColor=white)](https://www.researchgate.net/profile/Akshat-Bisht-8)
+[![Amazon Author](https://img.shields.io/badge/Amazon-Author%20Page-FF9900?style=for-the-badge&logo=amazon&logoColor=white)](https://www.amazon.com/stores/Akshat-Singh-Bisht/author/B0D5TYDT28?ref=sr_ntt_srch_lnk_1&qid=1789906571&sr=8-1&shoppingPortalEnabled=true)
+[![GitHub](https://img.shields.io/badge/GitHub-Profile-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/infoakshatsinghbisht-eng)
+[![Lexicon Forms](https://img.shields.io/badge/Lexicon%20Forms-300%2C516%2B-success.svg?style=for-the-badge)](https://github.com/infoakshatsinghbisht-eng/kumauni-language-convertor)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+
 A modern, full-stack Voice Translation and Cultural Intelligence application powered by the [`kumaoni`](https://github.com/infoakshatsinghbisht-eng/kumaoni-language-library) language library (300,516+ word forms).
 
 Features real-time multilingual Speech-to-Speech translation into authentic Central Pahari Kumaoni with live 60fps audio waveform visualization, two-way conversational dialogue mode, colloquial English synonym resolution (mom $\to$ ईजा, dad $\to$ बाबु, grandma $\to$ आमा, etc.), mountain phraseboards, Himalayan proverbs, riddles, folk literature, and cultural calendar.
 
 ---
+
 
 ## 🌟 Key Features
 
